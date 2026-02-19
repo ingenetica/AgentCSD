@@ -26,19 +26,19 @@ export function Layout() {
       />
 
       <div className="flex-1 flex min-w-0">
-        {/* External Dialog - main chat */}
-        <div className="flex-1 min-w-0 flex flex-col">
-          <ChatPanel onSend={(content) => send({ type: 'user_message', content })} />
-        </div>
-
-        {/* Observation panels */}
-        <div className="w-80 border-l border-gray-800 flex flex-col">
+        {/* Observation panels - LEFT (wider) */}
+        <div className="flex-[2] border-r border-gray-800 flex flex-col min-w-0">
           <div className="flex-1 min-h-0 border-b border-gray-800">
             <InternalPanel />
           </div>
           <div className="flex-1 min-h-0">
             <SubconsciousPanel />
           </div>
+        </div>
+
+        {/* External Dialog - RIGHT (narrower) */}
+        <div className="flex-1 min-w-0 flex flex-col">
+          <ChatPanel onSend={(content) => send({ type: 'user_message', content })} />
         </div>
       </div>
 

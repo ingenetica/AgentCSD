@@ -23,7 +23,11 @@ def create_adapter(config: dict) -> LLMAdapter:
     backend = config.get("backend", "claude_code_cli")
     model = config.get("model", "")
     if backend == "claude_code_cli":
-        return ClaudeCLIAdapter(model=model)
+        return ClaudeCLIAdapter(
+            model=model,
+            tools=config.get("tools"),
+            max_turns=config.get("max_turns", 1),
+        )
     elif backend == "anthropic_api":
         return AnthropicAPIAdapter(model=model, api_key=config.get("api_key"))
     elif backend == "openai_compatible":

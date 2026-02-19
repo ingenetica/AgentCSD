@@ -6,8 +6,11 @@ from llm.base import LLMAdapter
 
 
 class ClaudeCLIAdapter(LLMAdapter):
-    def __init__(self, model: str = "claude-sonnet-4-5-20250929"):
+    def __init__(self, model: str = "claude-sonnet-4-5-20250929",
+                 tools: list[str] | None = None, max_turns: int = 1):
         self.model = model
+        self.tools = tools
+        self.max_turns = max_turns
 
     def _build_cmd_and_env(self, system_prompt: str, messages: list[dict]) -> tuple[list[str], dict]:
         user_content = ""
@@ -21,10 +24,12 @@ class ClaudeCLIAdapter(LLMAdapter):
             "claude",
             "--print",
             "--model", self.model,
-            "--max-turns", "1",
+            "--max-turns", str(self.max_turns),
             "--system-prompt", system_prompt,
-            user_content.strip(),
         ]
+        if self.tools:
+            cmd.extend(["--tools", ",".join(self.tools)])
+        cmd.append(user_content.strip())
 
         env = {k: v for k, v in os.environ.items()
                if not k.startswith("CLAUDE")}

@@ -27,8 +27,10 @@ class InternalDialogLayer:
                            id_quiet_history: str = "") -> str:
         parts = []
         if ed_user:
+            parts.append("--- USER MESSAGE (from the human you're conversing with) ---")
             parts.append(f"<ED_user>{ed_user}</ED_user>")
         if s_loud_entries:
+            parts.append("--- SUBCONSCIOUS SIGNALS (private, from your own subconscious layer — NOT from the user) ---")
             signals = []
             for entry in s_loud_entries:
                 cycle = entry.get("cycle", "?")
@@ -38,6 +40,7 @@ class InternalDialogLayer:
                 "<S_loud_stream>" + "\n".join(signals) + "</S_loud_stream>"
             )
         if id_quiet_history:
+            parts.append("--- YOUR OWN PREVIOUS INTERNAL THOUGHTS ---")
             parts.append(f"<ID_quiet_history>{id_quiet_history}</ID_quiet_history>")
         return "\n".join(parts)
 
