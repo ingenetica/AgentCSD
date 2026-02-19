@@ -29,6 +29,8 @@ class ClaudeCLIAdapter(LLMAdapter):
         ]
         if self.tools:
             cmd.extend(["--tools", ",".join(self.tools)])
+        # "--" signals end-of-options so content starting with "-" isn't parsed as flags
+        cmd.append("--")
         cmd.append(user_content.strip())
 
         env = {k: v for k, v in os.environ.items()
