@@ -23,29 +23,51 @@ export function InternalPanel() {
             Internal dialog will appear here...
           </p>
         )}
-        {entries.map((entry, i) => (
-          <div
-            key={i}
-            className={`rounded px-3 py-2 text-sm border ${
-              entry.type === 'loud'
-                ? 'bg-orange-950/30 border-orange-900/50 text-orange-200'
-                : 'bg-gray-800/50 border-gray-700/50 text-gray-400 italic'
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-1">
-              <Badge color={entry.type === 'loud' ? 'orange' : 'gray'}>
-                {entry.type === 'loud' ? 'ID_loud' : 'ID_quiet'}
-              </Badge>
-              {entry.cycle !== undefined && (
-                <span className="text-[10px] text-gray-600">cycle {entry.cycle}</span>
-              )}
-              <span className="text-[10px] text-gray-600 ml-auto">
-                {new Date(entry.timestamp).toLocaleTimeString()}
-              </span>
+        {entries.map((entry, i) => {
+          const isInternalOnly = entry.internalOnly
+          const isLoud = entry.type === 'loud'
+          let containerClass: string
+          if (isLoud && isInternalOnly) {
+            containerClass = 'bg-gray-800/40 border-gray-600/50 text-gray-400'
+          } else if (isLoud) {
+            containerClass = 'bg-orange-950/30 border-orange-900/50 text-orange-200'
+          } else {
+            containerClass = 'bg-gray-800/50 border-gray-700/50 text-gray-400 italic'
+          }
+
+          let badgeColor: 'orange' | 'gray'
+          let badgeLabel: string
+          if (isLoud && isInternalOnly) {
+            badgeColor = 'gray'
+            badgeLabel = 'ID [internal]'
+          } else if (isLoud) {
+            badgeColor = 'orange'
+            badgeLabel = 'ID_loud'
+          } else {
+            badgeColor = 'gray'
+            badgeLabel = 'ID_quiet'
+          }
+
+          return (
+            <div
+              key={i}
+              className={`rounded px-3 py-2 text-sm border ${containerClass}`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <Badge color={badgeColor}>
+                  {badgeLabel}
+                </Badge>
+                {entry.cycle !== undefined && (
+                  <span className="text-[10px] text-gray-600">cycle {entry.cycle}</span>
+                )}
+                <span className="text-[10px] text-gray-600 ml-auto">
+                  {new Date(entry.timestamp).toLocaleTimeString()}
+                </span>
+              </div>
+              <div className="whitespace-pre-wrap break-words">{entry.content}</div>
             </div>
-            <div className="whitespace-pre-wrap break-words">{entry.content}</div>
-          </div>
-        ))}
+          )
+        })}
         <div ref={bottomRef} />
       </div>
     </Card>

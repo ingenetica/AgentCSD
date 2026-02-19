@@ -5,6 +5,7 @@ export interface InternalEntry {
   content: string
   cycle?: number
   timestamp: string
+  internalOnly?: boolean
 }
 
 interface InternalState {

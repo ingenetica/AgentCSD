@@ -61,4 +61,5 @@ export interface WSMessage {
   }
   message?: string
   subconscious_running?: boolean
+  internal_only?: boolean
 }

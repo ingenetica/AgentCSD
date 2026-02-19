@@ -1,7 +1,10 @@
+from __future__ import annotations
 from typing import AsyncGenerator
 from config import INTERNAL_DIALOG_SYSTEM_PROMPT
 from llm.base import LLMAdapter
 from utils.xml_parser import extract_tag
+
+NO_EXTERNAL_OUTPUT = "[NO_EXTERNAL_OUTPUT]"
 
 
 class InternalDialogLayer:
@@ -19,41 +22,44 @@ class InternalDialogLayer:
                 prompt += f"Criteria: {criteria}\n"
         return prompt
 
-    def build_user_message(self, ed_user: str = "", s_loud: str = "",
+    def build_user_message(self, ed_user: str = "",
+                           s_loud_entries: list[dict] | None = None,
                            id_quiet_history: str = "") -> str:
         parts = []
         if ed_user:
             parts.append(f"<ED_user>{ed_user}</ED_user>")
-        if s_loud:
-            parts.append(f"<S_loud>{s_loud}</S_loud>")
+        if s_loud_entries:
+            signals = []
+            for entry in s_loud_entries:
+                cycle = entry.get("cycle", "?")
+                content = entry.get("content", "")
+                signals.append(f'<signal cycle="{cycle}">{content}</signal>')
+            parts.append(
+                "<S_loud_stream>" + "\n".join(signals) + "</S_loud_stream>"
+            )
         if id_quiet_history:
             parts.append(f"<ID_quiet_history>{id_quiet_history}</ID_quiet_history>")
         return "\n".join(parts)
 
-    async def process(self, ed_user: str = "", s_loud: str = "",
+    async def process(self, ed_user: str = "",
+                      s_loud_entries: list[dict] | None = None,
                       id_quiet_history: str = "", mood: str = "",
                       criteria: str = "") -> dict:
         system = self.build_system_prompt(mood, criteria)
-        user_msg = self.build_user_message(ed_user, s_loud, id_quiet_history)
+        user_msg = self.build_user_message(ed_user, s_loud_entries, id_quiet_history)
 
         messages = [{"role": "user", "content": user_msg}]
         response = await self.llm.generate(system, messages, self.max_tokens)
 
-        id_loud = extract_tag(response, "ID_loud")
-        id_quiet = extract_tag(response, "ID_quiet")
+        return self.parse_response(response)
 
-        # Fallback: if no tags found, treat entire response as ID_loud
-        if not id_loud and not id_quiet:
-            id_loud = response
-
-        return {"id_loud": id_loud, "id_quiet": id_quiet, "raw": response}
-
-    async def stream_raw(self, ed_user: str = "", s_loud: str = "",
+    async def stream_raw(self, ed_user: str = "",
+                         s_loud_entries: list[dict] | None = None,
                          id_quiet_history: str = "", mood: str = "",
                          criteria: str = "") -> AsyncGenerator[str, None]:
         """Stream raw LLM output chunks without parsing."""
         system = self.build_system_prompt(mood, criteria)
-        user_msg = self.build_user_message(ed_user, s_loud, id_quiet_history)
+        user_msg = self.build_user_message(ed_user, s_loud_entries, id_quiet_history)
         messages = [{"role": "user", "content": user_msg}]
 
         async for chunk in self.llm.generate_stream(system, messages, self.max_tokens):
@@ -67,4 +73,15 @@ class InternalDialogLayer:
         if not id_loud and not id_quiet:
             id_loud = raw
 
-        return {"id_loud": id_loud, "id_quiet": id_quiet, "raw": raw}
+        # Treat [NO_EXTERNAL_OUTPUT] as empty externalization
+        internal_only = False
+        if id_loud and id_loud.strip() == NO_EXTERNAL_OUTPUT:
+            id_loud = ""
+            internal_only = True
+
+        return {
+            "id_loud": id_loud,
+            "id_quiet": id_quiet,
+            "raw": raw,
+            "internal_only": internal_only,
+        }

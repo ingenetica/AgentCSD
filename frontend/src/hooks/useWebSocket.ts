@@ -49,10 +49,13 @@ export function useWebSocket() {
         finalizeLastMessage(msg.content || '')
         break
       case 'id_loud':
-        addInternal({ type: 'loud', content: msg.content || '', cycle: msg.cycle, timestamp: msg.timestamp || '' })
+        addInternal({ type: 'loud', content: msg.content || '', cycle: msg.cycle, timestamp: msg.timestamp || '', internalOnly: msg.internal_only })
         break
       case 'id_quiet':
-        addInternal({ type: 'quiet', content: msg.content || '', cycle: msg.cycle, timestamp: msg.timestamp || '' })
+        addInternal({ type: 'quiet', content: msg.content || '', cycle: msg.cycle, timestamp: msg.timestamp || '', internalOnly: msg.internal_only })
+        break
+      case 'id_processing_chunk':
+        // Streaming chunk for Internal panel — ignore for now (raw stream)
         break
       case 's_loud':
         addSubconscious({ type: 'loud', content: msg.content || '', cycle: msg.cycle, timestamp: msg.timestamp || '' })

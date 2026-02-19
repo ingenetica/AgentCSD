@@ -6,7 +6,7 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
-from config import LOGS_DIR, PERSONAS_DIR, DEFAULT_MODEL_CONFIG
+from config import LOGS_DIR, PERSONAS_DIR, DEFAULT_MODEL_CONFIG, S_LOUD_BATCH_DELAY, S_LOUD_BATCH_MAX
 from database import repository as db
 from layers.internal_dialog import InternalDialogLayer
 from layers.subconscious import SubconsciousLayer
@@ -69,9 +69,15 @@ class Orchestrator:
         self.s_quiet_history: list[str] = []
         self.s_loud_history: list[str] = []
 
-        # Background task
+        # Background tasks
         self._subconscious_task: asyncio.Task | None = None
+        self._s_loud_processor_task: asyncio.Task | None = None
         self._processing_lock = asyncio.Lock()
+
+        # S_loud batching queue
+        self._pending_s_loud: list[dict] = []
+        self._s_loud_queue_event = asyncio.Event()
+        self._s_loud_force_drain = asyncio.Event()
 
     def _log_dir(self) -> Path:
         return LOGS_DIR / self.session_id
@@ -219,7 +225,10 @@ class Orchestrator:
     def _start_subconscious(self):
         if self._subconscious_task and not self._subconscious_task.done():
             self._subconscious_task.cancel()
+        if self._s_loud_processor_task and not self._s_loud_processor_task.done():
+            self._s_loud_processor_task.cancel()
         self._subconscious_task = asyncio.create_task(self._subconscious_loop())
+        self._s_loud_processor_task = asyncio.create_task(self._s_loud_processor_loop())
 
     async def pause(self):
         self.is_paused = True
@@ -243,12 +252,13 @@ class Orchestrator:
 
     async def stop(self):
         self.is_paused = True
-        if self._subconscious_task and not self._subconscious_task.done():
-            self._subconscious_task.cancel()
-            try:
-                await self._subconscious_task
-            except asyncio.CancelledError:
-                pass
+        for task in (self._subconscious_task, self._s_loud_processor_task):
+            if task and not task.done():
+                task.cancel()
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    pass
 
     async def update_config(self, model_config: dict):
         self.model_config = model_config
@@ -274,9 +284,17 @@ class Orchestrator:
                 {"tag": "ED_user", "content": content},
             )
 
-            # Get current subconscious state
+            # Drain any pending S_loud into this call
+            s_loud_entries = self._drain_pending_s_loud()
+
+            # If no pending S_loud, include latest current_s_loud as a single entry
+            if not s_loud_entries:
+                async with self._lock:
+                    if self.current_s_loud:
+                        s_loud_entries = [{"content": self.current_s_loud,
+                                           "cycle": self.subconscious_cycle}]
+
             async with self._lock:
-                s_loud = self.current_s_loud
                 mood = self.current_mood
                 criteria = self.current_criteria
 
@@ -287,7 +305,7 @@ class Orchestrator:
             raw_response = ""
             async for chunk in self.internal_dialog.stream_raw(
                 ed_user=content,
-                s_loud=s_loud,
+                s_loud_entries=s_loud_entries,
                 id_quiet_history=id_quiet_str,
                 mood=mood,
                 criteria=criteria,
@@ -337,8 +355,50 @@ class Orchestrator:
                 "cycle": self.subconscious_cycle, "timestamp": now,
             })
 
-    async def _handle_spontaneous(self):
-        """Triggered by subconscious when S_loud has substantive content."""
+    def _drain_pending_s_loud(self) -> list[dict]:
+        """Atomically drain the pending S_loud queue and return entries."""
+        entries = list(self._pending_s_loud)
+        self._pending_s_loud.clear()
+        self._s_loud_queue_event.clear()
+        self._s_loud_force_drain.clear()
+        return entries
+
+    async def _s_loud_processor_loop(self):
+        """Background loop that batches S_loud signals and feeds them to Internal Dialog."""
+        logger.info("S_loud processor loop started for session %s", self.session_id)
+
+        while True:
+            try:
+                # Wait until there's at least one S_loud queued
+                await self._s_loud_queue_event.wait()
+
+                if self.is_paused:
+                    await asyncio.sleep(0.5)
+                    continue
+
+                # Batch: wait for delay or force-drain, whichever comes first
+                try:
+                    await asyncio.wait_for(
+                        self._s_loud_force_drain.wait(),
+                        timeout=S_LOUD_BATCH_DELAY,
+                    )
+                except asyncio.TimeoutError:
+                    pass  # Normal: delay expired, drain now
+
+                # Drain and process
+                entries = self._drain_pending_s_loud()
+                if entries:
+                    await self._process_internal_from_s_loud(entries)
+
+            except asyncio.CancelledError:
+                logger.info("S_loud processor loop cancelled")
+                break
+            except Exception as e:
+                logger.error("S_loud processor error: %s", e, exc_info=True)
+                await asyncio.sleep(2)
+
+    async def _process_internal_from_s_loud(self, entries: list[dict]):
+        """Process batched S_loud entries through Internal Dialog."""
         if not self.internal_dialog:
             return
 
@@ -346,67 +406,77 @@ class Orchestrator:
             now = datetime.now(timezone.utc).isoformat()
 
             async with self._lock:
-                s_loud = self.current_s_loud
                 mood = self.current_mood
                 criteria = self.current_criteria
 
             id_quiet_str = "\n---\n".join(self.id_quiet_history[-10:])
 
-            # Stream raw response
+            # Stream raw response (no streaming chunks to chat — this is internal)
             raw_response = ""
             async for chunk in self.internal_dialog.stream_raw(
-                ed_user="",  # No user input
-                s_loud=s_loud,
+                ed_user="",
+                s_loud_entries=entries,
                 id_quiet_history=id_quiet_str,
                 mood=mood,
                 criteria=criteria,
             ):
                 raw_response += chunk
+                # Stream to Internal panel only (not chat)
                 await self.send_ws({
-                    "type": "ed_agent_chunk", "content": chunk, "timestamp": now,
+                    "type": "id_processing_chunk", "content": chunk, "timestamp": now,
                 })
 
             # Parse completed response
             result = self.internal_dialog.parse_response(raw_response)
             id_loud = result["id_loud"]
             id_quiet = result["id_quiet"]
+            internal_only = result["internal_only"]
 
-            # Send finalized clean response
-            await self.send_ws({
-                "type": "ed_agent_done", "content": id_loud, "timestamp": now,
-            })
+            # Only externalize to chat if there's actual content for the user
+            if id_loud and not internal_only:
+                await self.send_ws({
+                    "type": "ed_agent_done", "content": id_loud, "timestamp": now,
+                })
+                await db.save_message(self.session_id, "external", "ED_agent", id_loud,
+                                      self.subconscious_cycle)
+                self.last_ed_agent = id_loud
+                append_jsonl(self._log_dir() / "external_dialog.jsonl",
+                             {"tag": "ED_agent", "content": id_loud,
+                              "cycle_number": self.subconscious_cycle})
 
-            await db.save_message(self.session_id, "internal", "ID_loud", id_loud,
+            # Always persist ID_loud and ID_quiet
+            await db.save_message(self.session_id, "internal", "ID_loud",
+                                  id_loud or "[NO_EXTERNAL_OUTPUT]",
                                   self.subconscious_cycle)
             await db.save_message(self.session_id, "internal", "ID_quiet", id_quiet,
                                   self.subconscious_cycle)
-            await db.save_message(self.session_id, "external", "ED_agent", id_loud,
-                                  self.subconscious_cycle)
 
-            self.last_ed_agent = id_loud
             self.last_id_loud = id_loud
             self.last_id_quiet = id_quiet
             if id_quiet:
                 self.id_quiet_history.append(id_quiet)
 
+            # JSONL logs
             log_dir = self._log_dir()
             append_jsonl(log_dir / "internal_dialog.jsonl",
-                         {"tag": "ID_loud", "content": id_loud,
+                         {"tag": "ID_loud",
+                          "content": id_loud or "[NO_EXTERNAL_OUTPUT]",
+                          "internal_only": internal_only,
                           "cycle_number": self.subconscious_cycle})
             append_jsonl(log_dir / "internal_dialog.jsonl",
                          {"tag": "ID_quiet", "content": id_quiet,
                           "cycle_number": self.subconscious_cycle})
-            append_jsonl(log_dir / "external_dialog.jsonl",
-                         {"tag": "ED_agent", "content": id_loud,
-                          "cycle_number": self.subconscious_cycle})
 
-            # Send metadata to frontend
+            # Send metadata to frontend (with internal_only flag)
             await self.send_ws({
-                "type": "id_loud", "content": id_loud,
+                "type": "id_loud",
+                "content": id_loud or "[NO_EXTERNAL_OUTPUT]",
+                "internal_only": internal_only or (not id_loud),
                 "cycle": self.subconscious_cycle, "timestamp": now,
             })
             await self.send_ws({
                 "type": "id_quiet", "content": id_quiet,
+                "internal_only": True,
                 "cycle": self.subconscious_cycle, "timestamp": now,
             })
 
@@ -458,6 +528,22 @@ class Orchestrator:
                         result["s_loud"], cycle,
                     )
                     self.s_loud_history.append(result["s_loud"])
+
+                    # Enqueue S_loud for Internal Dialog processing
+                    self._pending_s_loud.append({
+                        "content": result["s_loud"],
+                        "cycle": cycle,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    })
+                    self._s_loud_queue_event.set()
+
+                    # Force immediate drain if trigger=true or batch is full
+                    if result["trigger"]:
+                        logger.info("Spontaneous trigger at cycle %d — force drain", cycle)
+                        self._s_loud_force_drain.set()
+                    elif len(self._pending_s_loud) >= S_LOUD_BATCH_MAX:
+                        logger.info("S_loud batch full (%d) — force drain", len(self._pending_s_loud))
+                        self._s_loud_force_drain.set()
 
                 if result["s_quiet"]:
                     await db.save_message(
@@ -512,11 +598,6 @@ class Orchestrator:
                     "type": "status", "subconscious_running": True,
                     "cycle": cycle,
                 })
-
-                # Trigger spontaneous if needed
-                if result["trigger"] and result["s_loud"]:
-                    logger.info("Spontaneous trigger at cycle %d", cycle)
-                    await self._handle_spontaneous()
 
                 # Context window management: summarize every N cycles
                 if cycle % self.summary_frequency == 0 and cycle > 0:
