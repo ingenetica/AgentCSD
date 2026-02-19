@@ -603,7 +603,8 @@ class Orchestrator:
                     })
 
                 await self.send_ws({
-                    "type": "status", "subconscious_running": True,
+                    "type": "status",
+                    "subconscious_running": not self.is_paused,
                     "cycle": cycle,
                 })
 
