@@ -31,6 +31,9 @@ export const useChatStore = create<ChatState>((set) => ({
     const last = msgs[msgs.length - 1]
     if (last && last.streaming) {
       msgs[msgs.length - 1] = { ...last, content, streaming: false }
+    } else if (content) {
+      // Autonomous response (from subconscious → internal dialog) with no prior streaming
+      msgs.push({ role: 'assistant', content, timestamp: new Date().toISOString() })
     }
     return { messages: msgs }
   }),

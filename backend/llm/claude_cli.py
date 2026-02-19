@@ -1,5 +1,6 @@
 from __future__ import annotations
 import asyncio
+import codecs
 import os
 from typing import AsyncGenerator
 from llm.base import LLMAdapter
@@ -74,11 +75,18 @@ class ClaudeCLIAdapter(LLMAdapter):
                 env=env,
             )
 
+            decoder = codecs.getincrementaldecoder("utf-8")("replace")
             while True:
                 chunk = await proc.stdout.read(256)
                 if not chunk:
+                    # Flush any remaining bytes in the decoder
+                    tail = decoder.decode(b"", final=True)
+                    if tail:
+                        yield tail
                     break
-                yield chunk.decode()
+                text = decoder.decode(chunk)
+                if text:
+                    yield text
 
             await proc.wait()
             if proc.returncode != 0:

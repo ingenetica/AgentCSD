@@ -236,6 +236,10 @@ class Orchestrator:
 
     async def pause(self):
         self.is_paused = True
+        # Discard any pending S_loud entries so they don't get processed after pause
+        self._pending_s_loud.clear()
+        self._s_loud_queue_event.clear()
+        self._s_loud_force_drain.clear()
         if self.session_id:
             await db.update_session(self.session_id, status="paused")
         await self.send_ws({
@@ -403,7 +407,7 @@ class Orchestrator:
 
     async def _process_internal_from_s_loud(self, entries: list[dict]):
         """Process batched S_loud entries through Internal Dialog."""
-        if not self.internal_dialog:
+        if not self.internal_dialog or self.is_paused:
             return
 
         async with self._processing_lock:
