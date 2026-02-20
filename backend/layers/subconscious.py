@@ -12,36 +12,39 @@ class SubconsciousLayer:
                            s_quiet_history: str = "",
                            s_loud_history: str = "",
                            cycle: int = 0) -> str:
-        parts = [f"[Ciclo {cycle}]"]
+        parts = []
 
         if ed_user:
-            parts.append("")
-            parts.append("El humano dijo:")
+            parts.append("El humano acaba de decir:")
             parts.append(f"<ED_user>{ed_user}</ED_user>")
         if ed_agent:
-            parts.append("")
-            parts.append("Tu capa consciente le respondió:")
+            if parts:
+                parts.append("")
+            parts.append("Se le respondió:")
             parts.append(f"<ED_agent>{ed_agent}</ED_agent>")
         if id_loud:
-            parts.append("")
-            parts.append("Lo que tu consciencia decidió decir:")
+            if parts:
+                parts.append("")
+            parts.append("Lo que se decidió decir en voz alta:")
             parts.append(f"<ID_loud>{id_loud}</ID_loud>")
         if id_quiet:
-            parts.append("")
-            parts.append("Lo que tu consciencia pensó pero no dijo:")
+            if parts:
+                parts.append("")
+            parts.append("Pensamiento interno que no se dijo:")
             parts.append(f"<ID_quiet>{id_quiet}</ID_quiet>")
         if s_loud_history:
-            parts.append("")
-            parts.append("Lo que ya le enviaste a tu consciencia (no repitas esto):")
+            if parts:
+                parts.append("")
+            parts.append("Lo que ya comunicaste antes (no lo repitas):")
             parts.append(f"<S_loud_history>{s_loud_history}</S_loud_history>")
         if s_quiet_history:
-            parts.append("")
-            parts.append("Tus notas internas de ciclos anteriores:")
+            if parts:
+                parts.append("")
+            parts.append("Tus notas internas anteriores:")
             parts.append(f"<S_quiet_history>{s_quiet_history}</S_quiet_history>")
 
-        if not ed_user and not ed_agent and not id_loud and not id_quiet:
-            parts.append("")
-            parts.append("No hay input nuevo del usuario ni de tu consciencia.")
+        if not parts:
+            parts.append("No hay información nueva.")
 
         return "\n".join(parts)
 

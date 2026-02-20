@@ -15,11 +15,11 @@ class InternalDialogLayer:
     def build_system_prompt(self, mood: str = "", criteria: str = "") -> str:
         prompt = INTERNAL_DIALOG_SYSTEM_PROMPT
         if mood or criteria:
-            prompt += "\n\n--- Tu subconsciente te dice ---\n"
+            prompt += "\n\nTu lectura emocional actual:\n"
             if mood:
-                prompt += f"Está sintiendo: {mood}\n"
+                prompt += f"Sientes: {mood}\n"
             if criteria:
-                prompt += f"Cree que deberías saber: {criteria}\n"
+                prompt += f"Crees que importa: {criteria}\n"
         return prompt
 
     def build_user_message(self, ed_user: str = "",
@@ -32,24 +32,25 @@ class InternalDialogLayer:
             parts.append(f"<ED_user>{ed_user}</ED_user>")
 
         if s_loud_entries:
-            parts.append("")
-            parts.append("Tu subconsciente te envía estos impulsos (el usuario NO ve esto):")
+            if parts:
+                parts.append("")
+            parts.append("Impulsos internos tuyos (el usuario NO ve esto):")
             signals = []
             for entry in s_loud_entries:
-                cycle = entry.get("cycle", "?")
                 content = entry.get("content", "")
-                signals.append(f'<signal cycle="{cycle}">{content}</signal>')
+                signals.append(f"<signal>{content}</signal>")
             parts.append(
                 "<S_loud_stream>" + "\n".join(signals) + "</S_loud_stream>"
             )
 
         if id_quiet_history:
-            parts.append("")
-            parts.append("Tus pensamientos anteriores (tu continuidad):")
+            if parts:
+                parts.append("")
+            parts.append("Tus pensamientos anteriores:")
             parts.append(f"<ID_quiet_history>{id_quiet_history}</ID_quiet_history>")
 
         if not ed_user and not s_loud_entries:
-            parts.append("No hay mensaje del usuario ni impulsos nuevos del subconsciente.")
+            parts.append("No hay mensaje del usuario ni impulsos nuevos.")
 
         return "\n".join(parts)
 
