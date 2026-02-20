@@ -15,36 +15,36 @@ class SubconsciousLayer:
         parts = []
 
         if ed_user:
-            parts.append("El humano acaba de decir:")
+            parts.append("The human just said:")
             parts.append(f"<ED_user>{ed_user}</ED_user>")
         if ed_agent:
             if parts:
                 parts.append("")
-            parts.append("Se le respondió:")
+            parts.append("The response given was:")
             parts.append(f"<ED_agent>{ed_agent}</ED_agent>")
         if id_loud:
             if parts:
                 parts.append("")
-            parts.append("Lo que se decidió decir en voz alta:")
+            parts.append("What was decided to say out loud:")
             parts.append(f"<ID_loud>{id_loud}</ID_loud>")
         if id_quiet:
             if parts:
                 parts.append("")
-            parts.append("Pensamiento interno que no se dijo:")
+            parts.append("Internal thought that was not said:")
             parts.append(f"<ID_quiet>{id_quiet}</ID_quiet>")
         if s_loud_history:
             if parts:
                 parts.append("")
-            parts.append("Lo que ya comunicaste antes (no lo repitas):")
+            parts.append("What you already communicated before (don't repeat it):")
             parts.append(f"<S_loud_history>{s_loud_history}</S_loud_history>")
         if s_quiet_history:
             if parts:
                 parts.append("")
-            parts.append("Tus notas internas anteriores:")
+            parts.append("Your previous internal notes:")
             parts.append(f"<S_quiet_history>{s_quiet_history}</S_quiet_history>")
 
         if not parts:
-            parts.append("No hay información nueva.")
+            parts.append("No new information.")
 
         return "\n".join(parts)
 

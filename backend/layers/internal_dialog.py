@@ -15,11 +15,11 @@ class InternalDialogLayer:
     def build_system_prompt(self, mood: str = "", criteria: str = "") -> str:
         prompt = INTERNAL_DIALOG_SYSTEM_PROMPT
         if mood or criteria:
-            prompt += "\n\nTu lectura emocional actual:\n"
+            prompt += "\n\nYour current emotional reading:\n"
             if mood:
-                prompt += f"Sientes: {mood}\n"
+                prompt += f"You feel: {mood}\n"
             if criteria:
-                prompt += f"Crees que importa: {criteria}\n"
+                prompt += f"You believe what matters: {criteria}\n"
         return prompt
 
     def build_user_message(self, ed_user: str = "",
@@ -28,13 +28,13 @@ class InternalDialogLayer:
         parts = []
 
         if ed_user:
-            parts.append("El humano te dice:")
+            parts.append("The human says to you:")
             parts.append(f"<ED_user>{ed_user}</ED_user>")
 
         if s_loud_entries:
             if parts:
                 parts.append("")
-            parts.append("Impulsos internos tuyos (el usuario NO ve esto):")
+            parts.append("Your own internal impulses (the user does NOT see this):")
             signals = []
             for entry in s_loud_entries:
                 content = entry.get("content", "")
@@ -46,11 +46,11 @@ class InternalDialogLayer:
         if id_quiet_history:
             if parts:
                 parts.append("")
-            parts.append("Tus pensamientos anteriores:")
+            parts.append("Your previous thoughts:")
             parts.append(f"<ID_quiet_history>{id_quiet_history}</ID_quiet_history>")
 
         if not ed_user and not s_loud_entries:
-            parts.append("No hay mensaje del usuario ni impulsos nuevos.")
+            parts.append("No user message or new impulses.")
 
         return "\n".join(parts)
 

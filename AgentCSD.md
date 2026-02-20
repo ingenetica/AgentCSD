@@ -1,250 +1,250 @@
 # AgentCSD — Conscious Subconscious Dynamic
 
-## Especificación de Arquitectura v1.0
+## Architecture Specification v1.0
 
 ---
 
-## 1. Visión General
+## 1. Overview
 
-AgentCSD es una arquitectura de agente conversacional que simula niveles de procesamiento cognitivo mediante tres capas concurrentes. La premisa central es que un agente no solo debe responder al input del usuario, sino que debe tener un proceso interno continuo — un "subconsciente" — que modula cómo piensa y responde, generando voluntad propia.
+AgentCSD is a conversational agent architecture that simulates cognitive processing levels through three concurrent layers. The central premise is that an agent should not only respond to user input, but must have a continuous internal process — a "subconscious" — that modulates how it thinks and responds, generating its own will.
 
-El sistema opera como una mente: piensa muchas cosas pero solo externaliza algunas. El subconsciente corre permanentemente, generando estados internos que modifican dinámicamente el comportamiento del diálogo interno, el cual a su vez decide qué comunicar al usuario.
+The system operates like a mind: it thinks many things but only externalizes some. The subconscious runs permanently, generating internal states that dynamically modify the behavior of the internal dialog, which in turn decides what to communicate to the user.
 
 ---
 
-## 2. Arquitectura de Tres Capas
+## 2. Three-Layer Architecture
 
-### 2.1 External Dialog (Capa Verde — Sin LLM)
+### 2.1 External Dialog (Green Layer — No LLM)
 
-**Función:** Interfaz de usuario. No contiene lógica de LLM. Rutea mensajes entre el usuario y el Internal Dialog.
+**Function:** User interface. Contains no LLM logic. Routes messages between the user and the Internal Dialog.
 
 **Input:**
-- Mensaje del usuario → taggeado como `<ED_user>`
+- User message → tagged as `<ED_user>`
 
 **Output:**
-- Respuesta al usuario → taggeado como `<ED_agent>` (proveniente de `<ID_loud>` del Internal Dialog)
+- Response to user → tagged as `<ED_agent>` (sourced from `<ID_loud>` of the Internal Dialog)
 
-**Comportamiento:**
-- Es la GUI de la aplicación
-- Muestra el chat con el usuario (External Dialog)
-- Muestra paneles de observación para Internal Dialog y Subconscious
-- Permite editar el Persona Core
-- Permite gestionar sesiones, configurar modelos/backends, pausar/reanudar
-
----
-
-### 2.2 Internal Dialog (Capa Naranja — C_model)
-
-**Función:** Pensador consciente. Procesa el input del usuario modulado por el estado del subconsciente. Decide qué externalizar y qué mantener interno.
-
-**Modelo:** LLM sofisticado (e.g., Claude Sonnet, o modelo potente vía API/local)
-
-**Triggers de activación:**
-1. Input del usuario (vía External Dialog)
-2. S_loud con contenido sustantivo proveniente del Subconscious (pensamiento espontáneo sin input del usuario)
-
-**System Prompt — Parte Estática:**
-Instrucciones permanentes que le explican al C_model:
-- Su rol como Internal Dialog de AgentCSD
-- Qué significa cada tag y cómo interpretar los mensajes que recibe
-- Que debe producir dos tipos de output: `<ID_loud>` (se externaliza al usuario) e `<ID_quiet>` (se mantiene interno)
-- Que `<ID_quiet>` es su espacio para razonar, reflexionar, y acumular pensamiento sin exponerlo al usuario
-- Reglas de comportamiento base
-
-**System Prompt — Parte Dinámica (M&C):**
-Inyectada por el Subconscious. Contiene:
-- Mood: estado emocional/tonal que debe adoptar
-- Criteria: criterios específicos para este momento sobre cómo responder, qué priorizar, qué evitar
-
-**Input (user message al C_model):**
-```xml
-<ED_user>Lo que dijo el usuario</ED_user>
-<S_loud>Lo que el subconsciente quiere comunicar al Internal Dialog</S_loud>
-<ID_quiet_history>Pensamientos internos previos acumulados del Internal Dialog</ID_quiet_history>
-```
-
-**Output esperado del C_model:**
-```xml
-<ID_loud>Lo que se envía al usuario como respuesta</ID_loud>
-<ID_quiet>Pensamientos internos, razonamientos, reflexiones que no se externalizan</ID_quiet>
-```
-
-**Persistencia:**
-- El historial completo (ID_loud + ID_quiet) se persiste en disco
-- ID_quiet se acumula como contexto para turnos futuros del Internal Dialog
-- ID_loud se pasa al External Dialog para mostrarse al usuario
+**Behavior:**
+- Is the application's GUI
+- Displays user chat (External Dialog)
+- Displays observation panels for Internal Dialog and Subconscious
+- Allows editing the Persona Core
+- Allows managing sessions, configuring models/backends, pausing/resuming
 
 ---
 
-### 2.3 Subconscious (Capa Azul — S_model)
+### 2.2 Internal Dialog (Orange Layer — C_model)
 
-**Función:** Proceso interno continuo. Evalúa todo el contexto disponible, genera estados internos, y modula el comportamiento del Internal Dialog mediante M&C. Opera como un loop asíncrono perpetuo.
+**Function:** Conscious thinker. Processes user input modulated by the subconscious state. Decides what to externalize and what to keep internal.
 
-**Modelo:** LLM barato/rápido (e.g., Claude Haiku, modelo local ligero)
+**Model:** Sophisticated LLM (e.g., Claude Sonnet, or powerful model via API/local)
 
-**Ciclo de ejecución:**
-- Loop continuo: al terminar un ciclo, inicia otro inmediatamente
-- Se pausa cuando el usuario pausa la aplicación o cierra el programa
-- Se reanuda al reabrir/despausar
+**Activation triggers:**
+1. User input (via External Dialog)
+2. S_loud with substantive content from the Subconscious (spontaneous thought without user input)
+
+**System Prompt — Static Part:**
+Permanent instructions that explain to the C_model:
+- Its role as Internal Dialog of AgentCSD
+- What each tag means and how to interpret received messages
+- That it must produce two types of output: `<ID_loud>` (externalized to the user) and `<ID_quiet>` (kept internal)
+- That `<ID_quiet>` is its space to reason, reflect, and accumulate thought without exposing it to the user
+- Base behavioral rules
+
+**System Prompt — Dynamic Part (M&C):**
+Injected by the Subconscious. Contains:
+- Mood: emotional/tonal state to adopt
+- Criteria: specific criteria for this moment on how to respond, what to prioritize, what to avoid
+
+**Input (user message to the C_model):**
+```xml
+<ED_user>What the user said</ED_user>
+<S_loud>What the subconscious wants to communicate to the Internal Dialog</S_loud>
+<ID_quiet_history>Previous accumulated internal thoughts from the Internal Dialog</ID_quiet_history>
+```
+
+**Expected C_model output:**
+```xml
+<ID_loud>What is sent to the user as a response</ID_loud>
+<ID_quiet>Internal thoughts, reasoning, reflections that are not externalized</ID_quiet>
+```
+
+**Persistence:**
+- The complete history (ID_loud + ID_quiet) is persisted to disk
+- ID_quiet accumulates as context for future Internal Dialog turns
+- ID_loud is passed to the External Dialog to be shown to the user
+
+---
+
+### 2.3 Subconscious (Blue Layer — S_model)
+
+**Function:** Continuous internal process. Evaluates all available context, generates internal states, and modulates Internal Dialog behavior via M&C. Operates as a perpetual asynchronous loop.
+
+**Model:** Cheap/fast LLM (e.g., Claude Haiku, lightweight local model)
+
+**Execution cycle:**
+- Continuous loop: upon finishing a cycle, starts another immediately
+- Pauses when the user pauses the application or closes the program
+- Resumes when reopened/unpaused
 
 **System Prompt (Persona Core):**
-- Archivo `.md` inmutable por el programa
-- Solo editable manualmente desde la GUI
-- No puede ser reemplazado, sobrescrito, o modificado por el S_model ni por ningún proceso automatizado
-- Define la personalidad, valores, criterios de relevancia, y reglas sobre qué externalizar como S_loud vs mantener como S_quiet
-- Define los criterios para generar M&C (Mood and Criteria)
-- Define cuándo un pensamiento es suficientemente relevante para triggear al Internal Dialog sin input del usuario
+- Immutable `.md` file (cannot be modified by the program)
+- Only manually editable from the GUI
+- Cannot be replaced, overwritten, or modified by the S_model or any automated process
+- Defines personality, values, relevance criteria, and rules for what to externalize as S_loud vs keep as S_quiet
+- Defines criteria for generating M&C (Mood and Criteria)
+- Defines when a thought is sufficiently relevant to trigger the Internal Dialog without user input
 
-**Input (user message al S_model):**
+**Input (user message to the S_model):**
 ```xml
-<ED_user>Último mensaje del usuario (si existe)</ED_user>
-<ED_agent>Última respuesta al usuario (si existe)</ED_agent>
-<ID_quiet>Pensamientos internos recientes del Internal Dialog</ID_quiet>
-<ID_loud>Respuestas recientes del Internal Dialog</ID_loud>
-<S_quiet_history>Pensamientos internos previos del Subconscious</S_quiet_history>
-<S_loud_history>Comunicaciones previas del Subconscious al Internal Dialog</S_loud_history>
+<ED_user>Latest user message (if any)</ED_user>
+<ED_agent>Latest response to user (if any)</ED_agent>
+<ID_quiet>Recent internal thoughts from the Internal Dialog</ID_quiet>
+<ID_loud>Recent responses from the Internal Dialog</ID_loud>
+<S_quiet_history>Previous internal thoughts from the Subconscious</S_quiet_history>
+<S_loud_history>Previous communications from the Subconscious to the Internal Dialog</S_loud_history>
 ```
 
-**Output esperado del S_model:**
+**Expected S_model output:**
 ```xml
-<S_loud>Lo que el subconsciente quiere comunicar al Internal Dialog. Si no hay nada relevante, puede estar vacío o ausente.</S_loud>
-<S_quiet>Pensamientos internos del subconsciente que no se comunican al Internal Dialog</S_quiet>
+<S_loud>What the subconscious wants to communicate to the Internal Dialog. If nothing relevant, can be empty or absent.</S_loud>
+<S_quiet>Internal thoughts of the subconscious not communicated to the Internal Dialog</S_quiet>
 <M_AND_C>
-  <mood>Estado tonal/emocional sugerido para el Internal Dialog</mood>
-  <criteria>Criterios específicos: qué priorizar, qué evitar, cómo modular la respuesta</criteria>
+  <mood>Suggested tonal/emotional state for the Internal Dialog</mood>
+  <criteria>Specific criteria: what to prioritize, what to avoid, how to modulate the response</criteria>
 </M_AND_C>
 ```
 
-**Mecanismo de trigger espontáneo:**
-- Si el S_model genera S_loud con contenido sustantivo, el orquestador lo detecta y activa al Internal Dialog aunque no haya input del usuario
-- Los criterios de qué constituye "contenido sustantivo" están definidos en el Persona Core
-- El orquestador evalúa si S_loud tiene contenido (no vacío, no trivial) para decidir si triggerea
+**Spontaneous trigger mechanism:**
+- If the S_model generates S_loud with substantive content, the orchestrator detects it and activates the Internal Dialog even without user input
+- The criteria for what constitutes "substantive content" are defined in the Persona Core
+- The orchestrator evaluates whether S_loud has content (non-empty, non-trivial) to decide whether to trigger
 
-**Manejo de ventana de contexto:**
-- Los mensajes más antiguos se truncan cuando se acerca al límite de la ventana
-- Cada N ciclos (configurable), antes de truncar, el S_model genera un resumen compacto de lo que se descartará
-- El resumen se persiste como un mensaje especial al inicio del historial
-- N es configurable desde la GUI
+**Context window management:**
+- Oldest messages are truncated when approaching the window limit
+- Every N cycles (configurable), before truncating, the S_model generates a compact summary of what will be discarded
+- The summary is persisted as a special message at the beginning of the history
+- N is configurable from the GUI
 
 ---
 
-## 3. Flujo de Datos
+## 3. Data Flow
 
-### 3.1 Flujo Normal (Usuario envía mensaje)
+### 3.1 Normal Flow (User sends message)
 
 ```
-1. Usuario escribe mensaje
-2. External Dialog taggea como <ED_user> y envía al Orquestador
-3. Orquestador recopila estado actual:
-   - <ED_user> (mensaje del usuario)
-   - <S_loud> más reciente del Subconscious
-   - <M_AND_C> más reciente del Subconscious
-   - Historial de <ID_quiet> del Internal Dialog
-4. Orquestador construye el prompt del Internal Dialog:
-   - System prompt = estático + M&C dinámico
+1. User writes message
+2. External Dialog tags as <ED_user> and sends to the Orchestrator
+3. Orchestrator collects current state:
+   - <ED_user> (user message)
+   - Latest <S_loud> from the Subconscious
+   - Latest <M_AND_C> from the Subconscious
+   - <ID_quiet> history from the Internal Dialog
+4. Orchestrator builds the Internal Dialog prompt:
+   - System prompt = static + dynamic M&C
    - User message = ED_user + S_loud + ID_quiet_history
-5. C_model procesa y genera <ID_loud> + <ID_quiet>
-6. Orquestador:
-   - Envía <ID_loud> al External Dialog → se muestra al usuario como <ED_agent>
-   - Persiste <ID_quiet> en el historial del Internal Dialog
-   - Alimenta <ED_agent> e <ID_loud> e <ID_quiet> al siguiente ciclo del Subconscious
-7. Subconscious (que corre en paralelo) incorpora la nueva información en su próximo ciclo
+5. C_model processes and generates <ID_loud> + <ID_quiet>
+6. Orchestrator:
+   - Sends <ID_loud> to External Dialog → displayed to user as <ED_agent>
+   - Persists <ID_quiet> in the Internal Dialog history
+   - Feeds <ED_agent>, <ID_loud>, and <ID_quiet> to the next Subconscious cycle
+7. Subconscious (running in parallel) incorporates new information in its next cycle
 ```
 
-### 3.2 Flujo Espontáneo (Sin input del usuario)
+### 3.2 Spontaneous Flow (No user input)
 
 ```
-1. Subconscious completa un ciclo y genera S_loud con contenido sustantivo
-2. Orquestador detecta S_loud no vacío
-3. Orquestador activa al Internal Dialog con:
-   - System prompt = estático + M&C
-   - User message = S_loud + ID_quiet_history (sin ED_user)
-4. C_model procesa y genera <ID_loud> + <ID_quiet>
-5. Orquestador envía <ID_loud> al External Dialog como mensaje espontáneo del agente
-6. Se persiste todo normalmente
+1. Subconscious completes a cycle and generates S_loud with substantive content
+2. Orchestrator detects non-empty S_loud
+3. Orchestrator activates Internal Dialog with:
+   - System prompt = static + M&C
+   - User message = S_loud + ID_quiet_history (no ED_user)
+4. C_model processes and generates <ID_loud> + <ID_quiet>
+5. Orchestrator sends <ID_loud> to External Dialog as a spontaneous agent message
+6. Everything is persisted normally
 ```
 
-### 3.3 Loop del Subconscious
+### 3.3 Subconscious Loop
 
 ```
-Loop continuo:
-1. Recopilar inputs disponibles (ED_user, ED_agent, ID_loud, ID_quiet, S_quiet_history, S_loud_history)
-2. Construir prompt con Persona Core como system prompt
-3. S_model procesa y genera S_loud + S_quiet + M&C
-4. Orquestador:
-   - Almacena S_loud y M&C en estado compartido (disponible para Internal Dialog)
-   - Persiste S_quiet en historial del Subconscious
-   - Si S_loud tiene contenido sustantivo → evalúa trigger espontáneo
-5. Volver a 1 inmediatamente
+Continuous loop:
+1. Collect available inputs (ED_user, ED_agent, ID_loud, ID_quiet, S_quiet_history, S_loud_history)
+2. Build prompt with Persona Core as system prompt
+3. S_model processes and generates S_loud + S_quiet + M&C
+4. Orchestrator:
+   - Stores S_loud and M&C in shared state (available for Internal Dialog)
+   - Persists S_quiet in Subconscious history
+   - If S_loud has substantive content → evaluates spontaneous trigger
+5. Return to 1 immediately
 ```
 
 ---
 
-## 4. Tags — Referencia Completa
+## 4. Tags — Complete Reference
 
-| Tag | Origen | Destino | Descripción |
-|-----|--------|---------|-------------|
-| `<ED_user>` | Usuario (vía External Dialog) | Internal Dialog, Subconscious | Mensaje del usuario |
-| `<ED_agent>` | External Dialog | Subconscious | Respuesta mostrada al usuario |
-| `<ID_loud>` | Internal Dialog (C_model) | External Dialog, Subconscious | Pensamiento externalizado al usuario |
-| `<ID_quiet>` | Internal Dialog (C_model) | Internal Dialog (propio historial), Subconscious | Pensamiento interno no externalizado |
-| `<S_loud>` | Subconscious (S_model) | Internal Dialog | Lo que el subconsciente comunica al pensador consciente |
-| `<S_quiet>` | Subconscious (S_model) | Subconscious (propio historial) | Pensamiento interno del subconsciente |
-| `<M_AND_C>` | Subconscious (S_model) | Internal Dialog (system prompt dinámico) | Mood and Criteria — modula comportamiento del C_model |
-| `<Persona_Core>` | Archivo .md inmutable | Subconscious (system prompt fijo) | Personalidad, valores, criterios del subconsciente |
-
----
-
-## 5. Persistencia y Sesiones
-
-### 5.1 Modelo de Sesiones
-
-- Cada sesión tiene un ID único (UUID) y timestamp de creación
-- Múltiples sesiones pueden coexistir (como partidas guardadas)
-- Se puede crear una nueva sesión sin perder las anteriores
-- Se puede retomar cualquier sesión previa (carga historial y estado completo)
-- Al retomar, el Subconscious reanuda su loop con el historial previo cargado
-
-### 5.2 Almacenamiento
-
-**Base de datos:** SQLite
-
-Tablas principales:
-- `sessions`: ID, nombre, timestamp creación, timestamp última actividad, persona_core usado, config de modelos, estado (activa/pausada/cerrada)
-- `messages`: ID, session_id, layer (external/internal/subconscious), tag, contenido, timestamp, ciclo_number
-- `mood_and_criteria`: ID, session_id, mood, criteria, timestamp, ciclo_number
-- `context_summaries`: ID, session_id, layer, resumen, timestamp, ciclo cubierto (desde-hasta)
-
-### 5.3 Logs por Sesión
-
-Carpeta: `logs/{session_id}/`
-
-Archivos:
-- `external_dialog.jsonl` — Todos los ED_user y ED_agent
-- `internal_dialog.jsonl` — Todos los ID_loud e ID_quiet
-- `subconscious.jsonl` — Todos los S_loud y S_quiet
-- `mood_and_criteria.jsonl` — Todos los M&C generados
-- `persona_core_snapshot.md` — Copia del Persona Core al inicio de la sesión
-
-Formato JSONL: cada línea es un JSON con `timestamp`, `tag`, `content`, `cycle_number`.
+| Tag | Origin | Destination | Description |
+|-----|--------|-------------|-------------|
+| `<ED_user>` | User (via External Dialog) | Internal Dialog, Subconscious | User message |
+| `<ED_agent>` | External Dialog | Subconscious | Response shown to user |
+| `<ID_loud>` | Internal Dialog (C_model) | External Dialog, Subconscious | Thought externalized to user |
+| `<ID_quiet>` | Internal Dialog (C_model) | Internal Dialog (own history), Subconscious | Internal thought not externalized |
+| `<S_loud>` | Subconscious (S_model) | Internal Dialog | What the subconscious communicates to the conscious thinker |
+| `<S_quiet>` | Subconscious (S_model) | Subconscious (own history) | Internal thought of the subconscious |
+| `<M_AND_C>` | Subconscious (S_model) | Internal Dialog (dynamic system prompt) | Mood and Criteria — modulates C_model behavior |
+| `<Persona_Core>` | Immutable .md file | Subconscious (fixed system prompt) | Personality, values, criteria of the subconscious |
 
 ---
 
-## 6. Configuración de Modelos (Backend LLM)
+## 5. Persistence and Sessions
 
-### 6.1 Abstracción
+### 5.1 Session Model
 
-El sistema usa una interfaz unificada para invocar LLMs. Cada capa (C_model, S_model) puede configurarse independientemente.
+- Each session has a unique ID (UUID) and creation timestamp
+- Multiple sessions can coexist (like saved games)
+- A new session can be created without losing previous ones
+- Any previous session can be resumed (loads history and complete state)
+- On resume, the Subconscious resumes its loop with the previous history loaded
 
-### 6.2 Backends Soportados
+### 5.2 Storage
 
-| Backend | Uso | Configuración |
+**Database:** SQLite
+
+Main tables:
+- `sessions`: ID, name, creation timestamp, last activity timestamp, persona_core used, model config, state (active/paused/closed)
+- `messages`: ID, session_id, layer (external/internal/subconscious), tag, content, timestamp, cycle_number
+- `mood_and_criteria`: ID, session_id, mood, criteria, timestamp, cycle_number
+- `context_summaries`: ID, session_id, layer, summary, timestamp, cycle covered (from-to)
+
+### 5.3 Per-Session Logs
+
+Folder: `logs/{session_id}/`
+
+Files:
+- `external_dialog.jsonl` — All ED_user and ED_agent
+- `internal_dialog.jsonl` — All ID_loud and ID_quiet
+- `subconscious.jsonl` — All S_loud and S_quiet
+- `mood_and_criteria.jsonl` — All generated M&C
+- `persona_core_snapshot.md` — Copy of the Persona Core at session start
+
+JSONL format: each line is a JSON with `timestamp`, `tag`, `content`, `cycle_number`.
+
+---
+
+## 6. Model Configuration (LLM Backend)
+
+### 6.1 Abstraction
+
+The system uses a unified interface for invoking LLMs. Each layer (C_model, S_model) can be configured independently.
+
+### 6.2 Supported Backends
+
+| Backend | Use | Configuration |
 |---------|-----|---------------|
-| Claude Code CLI | Default. Usa suscripción Max | Path al binario de Claude Code |
-| Anthropic API | Alternativo cloud | API key + modelo |
-| OpenAI-compatible API | Modelos locales (LMStudio, Ollama, etc.) | URL del endpoint + modelo |
+| Claude Code CLI | Default. Uses Max subscription | Path to Claude Code binary |
+| Anthropic API | Alternative cloud | API key + model |
+| OpenAI-compatible API | Local models (LMStudio, Ollama, etc.) | Endpoint URL + model |
 
-### 6.3 Configuración por Capa
+### 6.3 Per-Layer Configuration
 
 ```json
 {
@@ -266,134 +266,134 @@ El sistema usa una interfaz unificada para invocar LLMs. Cada capa (C_model, S_m
 
 ## 7. Persona Core
 
-### 7.1 Definición
+### 7.1 Definition
 
-Archivo markdown (`.md`) que define la identidad del subconsciente. Es el equivalente a la personalidad fundamental, valores, y criterios de operación.
+A markdown (`.md`) file that defines the subconscious identity. It is the equivalent of fundamental personality, values, and operating criteria.
 
-### 7.2 Contenido Esperado
+### 7.2 Expected Content
 
-El Persona Core debe incluir (a definir por el usuario):
-- Identidad y personalidad del agente
-- Valores y principios
-- Criterios de relevancia: qué constituye información importante para comunicar al Internal Dialog
-- Criterios de S_loud vs S_quiet: qué externalizar y qué mantener interno
-- Criterios para M&C: cómo decidir mood y criteria para el Internal Dialog
-- Criterios de trigger espontáneo: cuándo un pensamiento justifica activar al Internal Dialog sin input del usuario
-- Cualquier otra directriz que defina el comportamiento profundo del agente
+The Persona Core should include (defined by the user):
+- Agent identity and personality
+- Values and principles
+- Relevance criteria: what constitutes important information to communicate to the Internal Dialog
+- S_loud vs S_quiet criteria: what to externalize and what to keep internal
+- M&C criteria: how to determine mood and criteria for the Internal Dialog
+- Spontaneous trigger criteria: when a thought justifies activating the Internal Dialog without user input
+- Any other directive that defines the deep behavior of the agent
 
-### 7.3 Inmutabilidad
+### 7.3 Immutability
 
-- El archivo se carga como system prompt del S_model
-- Solo es editable desde la GUI manualmente por el usuario
-- Ningún proceso del programa puede modificar, reemplazar, o sobrescribir el archivo
-- Al iniciar una sesión, se genera una copia snapshot en la carpeta de logs
+- The file is loaded as the S_model system prompt
+- Only manually editable from the GUI by the user
+- No program process can modify, replace, or overwrite the file
+- When a session starts, a snapshot copy is generated in the logs folder
 
-### 7.4 Múltiples Persona Cores
+### 7.4 Multiple Persona Cores
 
-- El usuario puede tener múltiples archivos de Persona Core
-- Al crear/retomar una sesión, selecciona cuál usar
-- Cada sesión registra qué Persona Core utilizó
+- The user can have multiple Persona Core files
+- When creating/resuming a session, they select which one to use
+- Each session records which Persona Core was used
 
 ---
 
-## 8. Interfaz Gráfica (GUI)
+## 8. Graphical Interface (GUI)
 
 ### 8.1 Stack
 
-- **Frontend:** React (servido localmente)
+- **Frontend:** React (served locally)
 - **Backend:** Python + FastAPI
-- **Comunicación:** WebSocket para streaming en tiempo real
-- **Cross-platform:** Mac y Ubuntu sin cambios
+- **Communication:** WebSocket for real-time streaming
+- **Cross-platform:** Mac and Ubuntu without changes
 
-### 8.2 Paneles
+### 8.2 Panels
 
-1. **External Dialog (Chat):** Interfaz de chat clásica. Muestra mensajes del usuario y respuestas del agente. Input de texto para el usuario.
+1. **External Dialog (Chat):** Classic chat interface. Shows user messages and agent responses. Text input for the user.
 
-2. **Internal Dialog (Panel de observación):** Muestra en tiempo real los ID_loud (marcados como externalizados) e ID_quiet (marcados como internos). Permite ver el razonamiento completo del agente.
+2. **Internal Dialog (Observation Panel):** Shows in real-time the ID_loud (marked as externalized) and ID_quiet (marked as internal). Allows viewing the complete reasoning of the agent.
 
-3. **Subconscious (Panel de observación):** Muestra en tiempo real los S_loud, S_quiet, y M&C de cada ciclo. Permite ver el flujo de pensamiento del subconsciente.
+3. **Subconscious (Observation Panel):** Shows in real-time the S_loud, S_quiet, and M&C from each cycle. Allows viewing the subconscious thought stream.
 
-### 8.3 Controles
+### 8.3 Controls
 
-- **Sesiones:** Crear nueva, retomar existente, listar todas
-- **Pausa/Reanudación:** Botón para pausar/reanudar el loop del subconsciente
-- **Persona Core:** Selector de archivo + editor de texto integrado (edición manual)
-- **Configuración de modelos:** Selector de backend y modelo para C_model y S_model
-- **Parámetros:** N (frecuencia de resumen del subconsciente), max_tokens por capa
-
----
-
-## 9. Stack Técnico
-
-| Componente | Tecnología |
-|------------|------------|
-| Orquestador / Backend | Python 3.11+ con FastAPI |
-| Concurrencia | asyncio (loop del subconsciente como tarea asíncrona) |
-| Persistencia | SQLite + archivos JSONL |
-| Frontend | React (servido por FastAPI como static files) |
-| Comunicación Frontend-Backend | WebSocket (streaming tiempo real) |
-| LLM Interface | Capa de abstracción con adaptadores para Claude Code CLI, Anthropic API, OpenAI-compatible API |
-| Cross-platform | Mac (desarrollo) → Ubuntu (producción) |
+- **Sessions:** Create new, resume existing, list all
+- **Pause/Resume:** Button to pause/resume the subconscious loop
+- **Persona Core:** File selector + integrated text editor (manual editing)
+- **Model configuration:** Backend and model selector for C_model and S_model
+- **Parameters:** N (subconscious summary frequency), max_tokens per layer
 
 ---
 
-## 10. Comportamiento del Sistema
+## 9. Technical Stack
 
-### 10.1 Inicio de Sesión Nueva
-
-1. Usuario selecciona Persona Core
-2. Usuario configura modelos (o usa defaults)
-3. Se crea registro de sesión en SQLite
-4. Se copia snapshot del Persona Core a la carpeta de logs
-5. Se inicia el loop del Subconscious
-6. El sistema queda listo para recibir input del usuario
-
-### 10.2 Retomar Sesión
-
-1. Usuario selecciona sesión existente de la lista
-2. Se carga historial completo (Internal Dialog + Subconscious + External Dialog)
-3. Se carga el Persona Core asociado a esa sesión
-4. Se reanuda el loop del Subconscious con el historial cargado
-5. El sistema continúa como si nunca se hubiera pausado
-
-### 10.3 Pausar
-
-1. El loop del Subconscious se detiene después de completar el ciclo actual
-2. Se persiste todo el estado
-3. El usuario puede seguir viendo los paneles pero no hay actividad nueva
-
-### 10.4 Cerrar Programa
-
-1. Se pausa automáticamente (igual que 10.3)
-2. Se cierra la GUI y el backend
-3. Al reabrir, el usuario puede retomar la sesión o crear una nueva
+| Component | Technology |
+|-----------|------------|
+| Orchestrator / Backend | Python 3.11+ with FastAPI |
+| Concurrency | asyncio (subconscious loop as async task) |
+| Persistence | SQLite + JSONL files |
+| Frontend | React (served by FastAPI as static files) |
+| Frontend-Backend Communication | WebSocket (real-time streaming) |
+| LLM Interface | Abstraction layer with adapters for Claude Code CLI, Anthropic API, OpenAI-compatible API |
+| Cross-platform | Mac (development) → Ubuntu (production) |
 
 ---
 
-## 11. Consideraciones Técnicas
+## 10. System Behavior
 
-### 11.1 Detección de S_loud Sustantivo
+### 10.1 New Session Start
 
-El orquestador necesita determinar si S_loud tiene contenido suficiente para triggear al Internal Dialog. Opciones:
-- **Simple:** S_loud no vacío y con más de N caracteres (configurable)
-- **Basado en tag:** El S_model incluye un tag explícito `<trigger>true/false</trigger>` como parte de su output, evaluado según criterios del Persona Core
+1. User selects Persona Core
+2. User configures models (or uses defaults)
+3. Session record is created in SQLite
+4. Persona Core snapshot is copied to the logs folder
+5. Subconscious loop is started
+6. System is ready to receive user input
 
-Recomendación: usar el tag explícito, ya que los criterios de relevancia ya están definidos en el Persona Core y el S_model es quien mejor puede evaluarlos.
+### 10.2 Resume Session
 
-### 11.2 Concurrencia y Estado Compartido
+1. User selects existing session from the list
+2. Complete history is loaded (Internal Dialog + Subconscious + External Dialog)
+3. The Persona Core associated with that session is loaded
+4. Subconscious loop is resumed with the loaded history
+5. System continues as if it had never been paused
 
-- El Subconscious y el Internal Dialog corren como tareas asyncio independientes
-- El estado compartido (S_loud actual, M&C actual) se gestiona con locks asyncio para evitar race conditions
-- El Subconscious escribe; el Internal Dialog lee. No hay escritura concurrente al mismo recurso.
+### 10.3 Pause
 
-### 11.3 Rate Limits con Claude Code CLI + Max
+1. Subconscious loop stops after completing the current cycle
+2. All state is persisted
+3. User can still view panels but there is no new activity
 
-- El loop del Subconscious se auto-throttlea naturalmente: cada ciclo tarda lo que tarde la llamada al LLM
-- A mayor contexto acumulado, ciclos más lentos (más tokens de input)
-- Si se detecta rate limiting, el orquestador implementa backoff exponencial
+### 10.4 Close Program
 
-### 11.4 Ventana de Contexto
+1. Pauses automatically (same as 10.3)
+2. GUI and backend are closed
+3. On reopen, user can resume the session or create a new one
 
-- Cada capa gestiona su propia ventana independientemente
-- El resumen acumulativo del Subconscious evita pérdida total de contexto al truncar
-- El parámetro N (frecuencia de resumen) es configurable para balancear costo vs retención de contexto
+---
+
+## 11. Technical Considerations
+
+### 11.1 Substantive S_loud Detection
+
+The orchestrator needs to determine if S_loud has sufficient content to trigger the Internal Dialog. Options:
+- **Simple:** S_loud non-empty and with more than N characters (configurable)
+- **Tag-based:** The S_model includes an explicit tag `<trigger>true/false</trigger>` as part of its output, evaluated according to Persona Core criteria
+
+Recommendation: use the explicit tag, since the relevance criteria are already defined in the Persona Core and the S_model is best positioned to evaluate them.
+
+### 11.2 Concurrency and Shared State
+
+- The Subconscious and Internal Dialog run as independent asyncio tasks
+- Shared state (current S_loud, current M&C) is managed with asyncio locks to avoid race conditions
+- The Subconscious writes; the Internal Dialog reads. There is no concurrent writing to the same resource.
+
+### 11.3 Rate Limits with Claude Code CLI + Max
+
+- The Subconscious loop self-throttles naturally: each cycle takes as long as the LLM call takes
+- With more accumulated context, cycles are slower (more input tokens)
+- If rate limiting is detected, the orchestrator implements exponential backoff
+
+### 11.4 Context Window
+
+- Each layer manages its own window independently
+- The Subconscious cumulative summary prevents total context loss when truncating
+- The N parameter (summary frequency) is configurable to balance cost vs context retention
