@@ -63,6 +63,21 @@ export function useWebSocket() {
       case 's_quiet':
         addSubconscious({ type: 'quiet', content: msg.content || '', cycle: msg.cycle, timestamp: msg.timestamp || '' })
         break
+      case 's_input_context':
+        addSubconscious({
+          type: 'input_context', content: '', cycle: msg.cycle, timestamp: msg.timestamp || '',
+          edUser: msg.ed_user || '', edAgent: msg.ed_agent || '',
+          idLoud: msg.id_loud || '', idQuiet: msg.id_quiet || '',
+        })
+        break
+      case 'id_input_context':
+        addInternal({
+          type: 'input_context', content: '', cycle: msg.cycle, timestamp: msg.timestamp || '',
+          edUser: msg.ed_user || '',
+          sLoudEntries: msg.s_loud_entries || [],
+          mood: msg.mood || '', criteria: msg.criteria || '',
+        })
+        break
       case 'm_and_c':
         setMoodAndCriteria(msg.mood || '', msg.criteria || '', msg.cycle)
         break

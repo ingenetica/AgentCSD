@@ -62,4 +62,10 @@ export interface WSMessage {
   message?: string
   subconscious_running?: boolean
   internal_only?: boolean
+  // Input context fields
+  ed_user?: string
+  ed_agent?: string
+  id_loud?: string
+  id_quiet?: string
+  s_loud_entries?: { cycle?: number; content: string }[]
 }

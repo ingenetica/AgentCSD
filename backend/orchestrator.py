@@ -309,6 +309,17 @@ class Orchestrator:
             # Build ID_quiet history string (last N entries)
             id_quiet_str = "\n---\n".join(self.id_quiet_history[-10:])
 
+            # Send input context to frontend (what goes into C_model)
+            await self.send_ws({
+                "type": "id_input_context",
+                "cycle": self.subconscious_cycle,
+                "ed_user": content,
+                "s_loud_entries": [{"cycle": e.get("cycle"), "content": e.get("content", "")} for e in s_loud_entries] if s_loud_entries else [],
+                "mood": mood,
+                "criteria": criteria,
+                "timestamp": now,
+            })
+
             # Call Internal Dialog with streaming
             raw_response = ""
             async for chunk in self.internal_dialog.stream_raw(
@@ -419,6 +430,17 @@ class Orchestrator:
 
             id_quiet_str = "\n---\n".join(self.id_quiet_history[-10:])
 
+            # Send input context to frontend (what goes into C_model from S_loud)
+            await self.send_ws({
+                "type": "id_input_context",
+                "cycle": self.subconscious_cycle,
+                "ed_user": "",
+                "s_loud_entries": [{"cycle": e.get("cycle"), "content": e.get("content", "")} for e in entries],
+                "mood": mood,
+                "criteria": criteria,
+                "timestamp": now,
+            })
+
             # Stream raw response (no streaming chunks to chat — this is internal)
             raw_response = ""
             async for chunk in self.internal_dialog.stream_raw(
@@ -510,6 +532,18 @@ class Orchestrator:
                 # Build inputs
                 s_quiet_str = "\n---\n".join(self.s_quiet_history[-10:])
                 s_loud_str = "\n---\n".join(self.s_loud_history[-10:])
+
+                now_ctx = datetime.now(timezone.utc).isoformat()
+                # Send input context to frontend (what goes into S_model)
+                await self.send_ws({
+                    "type": "s_input_context",
+                    "cycle": cycle,
+                    "ed_user": self.last_ed_user or "",
+                    "ed_agent": self.last_ed_agent or "",
+                    "id_loud": self.last_id_loud or "",
+                    "id_quiet": self.last_id_quiet or "",
+                    "timestamp": now_ctx,
+                })
 
                 result = await self.subconscious.process(
                     persona_core=self.persona_core,

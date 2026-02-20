@@ -1,10 +1,15 @@
 import { create } from 'zustand'
 
 export interface SubconsciousEntry {
-  type: 'loud' | 'quiet'
+  type: 'loud' | 'quiet' | 'input_context'
   content: string
   cycle?: number
   timestamp: string
+  // Input context fields
+  edUser?: string
+  edAgent?: string
+  idLoud?: string
+  idQuiet?: string
 }
 
 interface SubconsciousState {

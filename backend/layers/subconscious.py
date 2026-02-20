@@ -12,27 +12,37 @@ class SubconsciousLayer:
                            s_quiet_history: str = "",
                            s_loud_history: str = "",
                            cycle: int = 0) -> str:
-        parts = [f"--- CYCLE {cycle} ---"]
+        parts = [f"[Ciclo {cycle}]"]
+
         if ed_user:
-            parts.append("--- LAST USER MESSAGE ---")
+            parts.append("")
+            parts.append("El humano dijo:")
             parts.append(f"<ED_user>{ed_user}</ED_user>")
         if ed_agent:
-            parts.append("--- LAST AGENT RESPONSE TO USER ---")
+            parts.append("")
+            parts.append("Tu capa consciente le respondió:")
             parts.append(f"<ED_agent>{ed_agent}</ED_agent>")
         if id_loud:
-            parts.append("--- LAST INTERNAL DIALOG OUTPUT (what was said to user) ---")
+            parts.append("")
+            parts.append("Lo que tu consciencia decidió decir:")
             parts.append(f"<ID_loud>{id_loud}</ID_loud>")
         if id_quiet:
-            parts.append("--- LAST INTERNAL DIALOG PRIVATE THOUGHT ---")
+            parts.append("")
+            parts.append("Lo que tu consciencia pensó pero no dijo:")
             parts.append(f"<ID_quiet>{id_quiet}</ID_quiet>")
         if s_loud_history:
-            parts.append("--- YOUR OWN S_LOUD HISTORY (what you already broadcast — DO NOT REPEAT) ---")
+            parts.append("")
+            parts.append("Lo que ya le enviaste a tu consciencia (no repitas esto):")
             parts.append(f"<S_loud_history>{s_loud_history}</S_loud_history>")
         if s_quiet_history:
-            parts.append("--- YOUR OWN S_QUIET HISTORY (your previous internal notes) ---")
+            parts.append("")
+            parts.append("Tus notas internas de ciclos anteriores:")
             parts.append(f"<S_quiet_history>{s_quiet_history}</S_quiet_history>")
+
         if not ed_user and not ed_agent and not id_loud and not id_quiet:
-            parts.append("<no_new_input/>")
+            parts.append("")
+            parts.append("No hay input nuevo del usuario ni de tu consciencia.")
+
         return "\n".join(parts)
 
     async def process(self, persona_core: str, ed_user: str = "",

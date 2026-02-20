@@ -15,22 +15,25 @@ class InternalDialogLayer:
     def build_system_prompt(self, mood: str = "", criteria: str = "") -> str:
         prompt = INTERNAL_DIALOG_SYSTEM_PROMPT
         if mood or criteria:
-            prompt += "\n\n--- CURRENT MOOD AND CRITERIA (from Subconscious) ---\n"
+            prompt += "\n\n--- Tu subconsciente te dice ---\n"
             if mood:
-                prompt += f"Mood: {mood}\n"
+                prompt += f"Está sintiendo: {mood}\n"
             if criteria:
-                prompt += f"Criteria: {criteria}\n"
+                prompt += f"Cree que deberías saber: {criteria}\n"
         return prompt
 
     def build_user_message(self, ed_user: str = "",
                            s_loud_entries: list[dict] | None = None,
                            id_quiet_history: str = "") -> str:
         parts = []
+
         if ed_user:
-            parts.append("--- USER MESSAGE (from the human you're conversing with) ---")
+            parts.append("El humano te dice:")
             parts.append(f"<ED_user>{ed_user}</ED_user>")
+
         if s_loud_entries:
-            parts.append("--- SUBCONSCIOUS SIGNALS (private, from your own subconscious layer — NOT from the user) ---")
+            parts.append("")
+            parts.append("Tu subconsciente te envía estos impulsos (el usuario NO ve esto):")
             signals = []
             for entry in s_loud_entries:
                 cycle = entry.get("cycle", "?")
@@ -39,9 +42,15 @@ class InternalDialogLayer:
             parts.append(
                 "<S_loud_stream>" + "\n".join(signals) + "</S_loud_stream>"
             )
+
         if id_quiet_history:
-            parts.append("--- YOUR OWN PREVIOUS INTERNAL THOUGHTS ---")
+            parts.append("")
+            parts.append("Tus pensamientos anteriores (tu continuidad):")
             parts.append(f"<ID_quiet_history>{id_quiet_history}</ID_quiet_history>")
+
+        if not ed_user and not s_loud_entries:
+            parts.append("No hay mensaje del usuario ni impulsos nuevos del subconsciente.")
+
         return "\n".join(parts)
 
     async def process(self, ed_user: str = "",
