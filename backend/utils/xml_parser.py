@@ -3,10 +3,21 @@ import re
 
 
 def extract_tag(text: str, tag: str) -> str:
-    """Extract content from an XML-style tag. Returns empty string if not found."""
+    """Extract content from an XML-style tag. Falls back to markdown-style headers.
+    Returns empty string if not found."""
+    # Try XML tags first: <tag>content</tag>
     pattern = rf"<{tag}>(.*?)</{tag}>"
     match = re.search(pattern, text, re.DOTALL)
-    return match.group(1).strip() if match else ""
+    if match:
+        return match.group(1).strip()
+
+    # Fallback: markdown-style header like **tag:** or **tag**:\n
+    md_pattern = rf"\*\*{tag}:?\*\*:?\s*\n(.*?)(?=\n\*\*\w|$)"
+    match = re.search(md_pattern, text, re.DOTALL | re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
+
+    return ""
 
 
 def extract_all_tags(text: str) -> dict[str, str]:

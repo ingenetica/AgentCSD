@@ -83,11 +83,23 @@ class InternalDialogLayer:
         id_quiet = extract_tag(raw, "ID_quiet")
 
         if not id_loud and not id_quiet:
-            id_loud = raw
+            # Last resort: try splitting on "---" separator
+            # Some models output ID_quiet then --- then ID_loud
+            if "\n---\n" in raw:
+                parts = raw.split("\n---\n", 1)
+                # Heuristic: shorter part is likely the externalization
+                # But really we can't know — treat as internal_only to be safe
+                id_quiet = raw
+                id_loud = ""
+            else:
+                # Can't parse at all — treat entire output as internal thought
+                # to prevent leaking private reasoning to the user
+                id_quiet = raw
+                id_loud = ""
 
         # Treat [NO_EXTERNAL_OUTPUT] as empty externalization
         internal_only = False
-        if id_loud and id_loud.strip() == NO_EXTERNAL_OUTPUT:
+        if not id_loud or id_loud.strip() == NO_EXTERNAL_OUTPUT:
             id_loud = ""
             internal_only = True
 
