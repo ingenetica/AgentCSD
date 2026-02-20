@@ -68,6 +68,12 @@ class Orchestrator:
         self.last_id_loud: str = ""
         self.last_id_quiet: str = ""
 
+        # Track what the subconscious already saw (to avoid feeding the same data)
+        self._s_seen_ed_user: str = ""
+        self._s_seen_ed_agent: str = ""
+        self._s_seen_id_loud: str = ""
+        self._s_seen_id_quiet: str = ""
+
         # Accumulated histories (windowed)
         self.id_quiet_history: list[str] = []
         self.s_quiet_history: list[str] = []
@@ -222,6 +228,10 @@ class Orchestrator:
         self.last_ed_agent = ""
         self.last_id_loud = ""
         self.last_id_quiet = ""
+        self._s_seen_ed_user = ""
+        self._s_seen_ed_agent = ""
+        self._s_seen_id_loud = ""
+        self._s_seen_id_quiet = ""
         self.id_quiet_history = []
         self.s_quiet_history = []
         self.s_loud_history = []
@@ -529,28 +539,40 @@ class Orchestrator:
                 self.subconscious_cycle += 1
                 cycle = self.subconscious_cycle
 
-                # Build inputs
+                # Build inputs — only pass values that changed since last cycle
                 s_quiet_str = "\n---\n".join(self.s_quiet_history[-10:])
                 s_loud_str = "\n---\n".join(self.s_loud_history[-10:])
+
+                # Diff: only send what the subconscious hasn't seen yet
+                new_ed_user = self.last_ed_user if self.last_ed_user != self._s_seen_ed_user else ""
+                new_ed_agent = self.last_ed_agent if self.last_ed_agent != self._s_seen_ed_agent else ""
+                new_id_loud = self.last_id_loud if self.last_id_loud != self._s_seen_id_loud else ""
+                new_id_quiet = self.last_id_quiet if self.last_id_quiet != self._s_seen_id_quiet else ""
+
+                # Mark as seen for next cycle
+                self._s_seen_ed_user = self.last_ed_user
+                self._s_seen_ed_agent = self.last_ed_agent
+                self._s_seen_id_loud = self.last_id_loud
+                self._s_seen_id_quiet = self.last_id_quiet
 
                 now_ctx = datetime.now(timezone.utc).isoformat()
                 # Send input context to frontend (what goes into S_model)
                 await self.send_ws({
                     "type": "s_input_context",
                     "cycle": cycle,
-                    "ed_user": self.last_ed_user or "",
-                    "ed_agent": self.last_ed_agent or "",
-                    "id_loud": self.last_id_loud or "",
-                    "id_quiet": self.last_id_quiet or "",
+                    "ed_user": new_ed_user,
+                    "ed_agent": new_ed_agent,
+                    "id_loud": new_id_loud,
+                    "id_quiet": new_id_quiet,
                     "timestamp": now_ctx,
                 })
 
                 result = await self.subconscious.process(
                     persona_core=self.persona_core,
-                    ed_user=self.last_ed_user,
-                    ed_agent=self.last_ed_agent,
-                    id_quiet=self.last_id_quiet,
-                    id_loud=self.last_id_loud,
+                    ed_user=new_ed_user,
+                    ed_agent=new_ed_agent,
+                    id_quiet=new_id_quiet,
+                    id_loud=new_id_loud,
                     s_quiet_history=s_quiet_str,
                     s_loud_history=s_loud_str,
                     cycle=cycle,
