@@ -519,6 +519,7 @@ class Orchestrator:
                     id_loud=self.last_id_loud,
                     s_quiet_history=s_quiet_str,
                     s_loud_history=s_loud_str,
+                    cycle=cycle,
                 )
 
                 # Update shared state

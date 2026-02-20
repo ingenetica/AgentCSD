@@ -10,29 +10,38 @@ class SubconsciousLayer:
     def build_user_message(self, ed_user: str = "", ed_agent: str = "",
                            id_quiet: str = "", id_loud: str = "",
                            s_quiet_history: str = "",
-                           s_loud_history: str = "") -> str:
-        parts = []
+                           s_loud_history: str = "",
+                           cycle: int = 0) -> str:
+        parts = [f"--- CYCLE {cycle} ---"]
         if ed_user:
+            parts.append("--- LAST USER MESSAGE ---")
             parts.append(f"<ED_user>{ed_user}</ED_user>")
         if ed_agent:
+            parts.append("--- LAST AGENT RESPONSE TO USER ---")
             parts.append(f"<ED_agent>{ed_agent}</ED_agent>")
         if id_loud:
+            parts.append("--- LAST INTERNAL DIALOG OUTPUT (what was said to user) ---")
             parts.append(f"<ID_loud>{id_loud}</ID_loud>")
         if id_quiet:
+            parts.append("--- LAST INTERNAL DIALOG PRIVATE THOUGHT ---")
             parts.append(f"<ID_quiet>{id_quiet}</ID_quiet>")
-        if s_quiet_history:
-            parts.append(f"<S_quiet_history>{s_quiet_history}</S_quiet_history>")
         if s_loud_history:
+            parts.append("--- YOUR OWN S_LOUD HISTORY (what you already broadcast — DO NOT REPEAT) ---")
             parts.append(f"<S_loud_history>{s_loud_history}</S_loud_history>")
-        return "\n".join(parts) if parts else "<no_new_input/>"
+        if s_quiet_history:
+            parts.append("--- YOUR OWN S_QUIET HISTORY (your previous internal notes) ---")
+            parts.append(f"<S_quiet_history>{s_quiet_history}</S_quiet_history>")
+        if not ed_user and not ed_agent and not id_loud and not id_quiet:
+            parts.append("<no_new_input/>")
+        return "\n".join(parts)
 
     async def process(self, persona_core: str, ed_user: str = "",
                       ed_agent: str = "", id_quiet: str = "",
                       id_loud: str = "", s_quiet_history: str = "",
-                      s_loud_history: str = "") -> dict:
+                      s_loud_history: str = "", cycle: int = 0) -> dict:
         user_msg = self.build_user_message(
             ed_user, ed_agent, id_quiet, id_loud,
-            s_quiet_history, s_loud_history,
+            s_quiet_history, s_loud_history, cycle,
         )
 
         messages = [{"role": "user", "content": user_msg}]

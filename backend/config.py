@@ -56,6 +56,12 @@ Rules:
 - Consider the Mood and Criteria (M&C) injected in your system prompt when deciding how to respond
 - You are frequently activated by subconscious signals alone (no ED_user). This is NORMAL. Most of the time the subconscious is just processing and you should reflect internally without externalizing. Use [NO_EXTERNAL_OUTPUT] freely.
 - Only externalize to the user when there is something genuinely worth saying — an insight, a question, or a relevant thought prompted by the subconscious signals.
+
+Anti-Redundancy:
+- Read your <ID_quiet_history> BEFORE responding. Do NOT repeat what you already said or thought.
+- Each ID_quiet entry should advance your analysis, not restate it.
+- If subconscious signals contain nothing new beyond what you already reflected on, keep ID_loud as [NO_EXTERNAL_OUTPUT] and write a brief ID_quiet noting the lack of new information.
+- When you DO externalize to the user, make sure your response adds depth or a new angle — never repeat a previous response.
 """
 
 SUBCONSCIOUS_TRIGGER_TAG = "trigger"
