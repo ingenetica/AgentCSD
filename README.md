@@ -2,6 +2,8 @@
 
 A cognitive architecture where two LLM processes run concurrently — one thinks continuously in the background (Subconscious), the other converses with the user modulated by that background state (Internal Dialog). The result is an agent with persistent internal state, emotional modulation, and autonomous behavior.
 
+Designed by **Ignacio Brescia**.
+
 ## How It Works
 
 ```
